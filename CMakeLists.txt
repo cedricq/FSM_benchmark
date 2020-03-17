@@ -8,3 +8,6 @@ project (FSM_1)
 #target_include_directories (FSM_1_lib PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 
 add_executable (FSM_1 main.cpp)
+
+
+add_subdirectory (TinyFSM)
