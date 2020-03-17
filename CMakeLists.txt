@@ -11,3 +11,4 @@ add_executable (FSM_1 main.cpp)
 
 
 add_subdirectory (TinyFSM)
+add_subdirectory (BoostSML)
