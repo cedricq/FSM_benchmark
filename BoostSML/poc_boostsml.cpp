@@ -54,9 +54,12 @@ struct imu_timeout {};
 struct first_step_completed {};
 struct last_step_completed {};
 struct finished {};
+// Errror events
+struct gentle_trap {};
+struct trap{};
+struct alert{};
 
 // Main States
-// States
 class Installation;
 class Sitting;
 class Standing;
@@ -67,8 +70,14 @@ class TriggerWalk;
 class FirstStep;
 class Walk;
 class LastStep;
+// Error States
+class NoError;
+class GentleTrap;
+class Trap;
+class Alert;
 
 struct main_fsm;
+struct error_fsm;
 
 struct walk_fsm {
   auto operator()() const {
@@ -106,7 +115,30 @@ struct main_fsm {
   }
 };
 
-}
+struct overall_fsm {
+  auto operator()() const {
+    using namespace sml;
+    // clang-format off
+    return make_transition_table(
+        state<main_fsm>  <= *state<NoError>,
+
+        state<GentleTrap><= state<main_fsm> + event<gentle_trap> / [] { std::cout << "No Error -> Gentle Trap !!" << std::endl; },
+        state<Trap>      <= state<main_fsm> + event<trap> / [] { std::cout << "No Error -> Trap !!" << std::endl; },
+
+        state<Trap>      <= state<GentleTrap> + event<finished> / [] { std::cout << "Gentle Trap OK -> TRAP !!" << std::endl; },
+
+        state<Trap>      <= state<GentleTrap> + event<gentle_trap> / [] { std::cout << "Gentle Trap interrupted -> TRAP !!" << std::endl; },
+        state<Trap>      <= state<GentleTrap> + event<trap> / [] { std::cout << "Gentle Trap interrupted -> TRAP !!" << std::endl; },
+
+        state<Alert>     <= state<NoError> + event<alert> / [] { std::cout << "Alert !!" << std::endl; },
+        state<Alert>     <= state<GentleTrap> + event<alert> / [] { std::cout << "Alert !!" << std::endl; },
+        state<Alert>     <= state<Trap> + event<alert> / [] { std::cout << "Alert !!" << std::endl; }
+    );
+    // clang-format on
+  }
+};
+
+}  // namespace
 
 // This is to output state machine in Plant UML format
 template <class T>
@@ -159,11 +191,9 @@ void dump(const SM&) noexcept {
   std::cout << std::endl << "@enduml" << std::endl;
 }
 
-int main() {
+void test_main_fsm(sml::sm<main_fsm, sml::logger<my_logger>>& sm)
+{
   using namespace sml;
-
-  my_logger logger;
-  sml::sm<main_fsm, sml::logger<my_logger>> sm{logger};
 
   assert(sm.is(state<Installation>));
 
@@ -211,7 +241,56 @@ int main() {
   sm.process_event(kill{});
   assert(sm.is(X));
 
+}
+
+void test_overall_fsm(sml::sm<overall_fsm, sml::logger<my_logger>>& sm)
+{
+  using namespace sml;
+
+  assert(sm.is<decltype(state<main_fsm>)>(state<Installation>));
+
+  sm.process_event(sitting_button{});
+  assert(sm.is<decltype(state<main_fsm>)>(state<Sitting>));
+
+  sm.process_event(standing_up_button{});
+  assert(sm.is<decltype(state<main_fsm>)>(state<Standing>));
+
+  sm.process_event(walking_button{});
+  assert(sm.is<decltype(state<main_fsm>)>(state<walk_fsm>));
+  assert(sm.is<decltype(state<walk_fsm>)>(state<TriggerWalk>));
+
+  sm.process_event(imu_detection{});
+  assert(sm.is<decltype(state<walk_fsm>)>(state<FirstStep>));
+
+  sm.process_event(first_step_completed{});
+  assert(sm.is<decltype(state<walk_fsm>)>(state<Walk>));
+
+
+  sm.process_event(gentle_trap{});
+  assert(sm.is(state<GentleTrap>));
+  sm.process_event(finished{});
+  assert(sm.is(state<Trap>));
+  sm.process_event(alert{});
+  assert(sm.is(state<Alert>));
+
+}
+
+int main() {
+
+  using namespace sml;
+
+  my_logger logger;
+  sml::sm<main_fsm, sml::logger<my_logger>> main_sm{logger};
+
+  test_main_fsm(main_sm);
+
+  sml::sm<overall_fsm, sml::logger<my_logger>> overall_sm{logger};
+  test_overall_fsm(overall_sm);
+
   // Export state machine plantuml
   std::cout<<std::endl;
-  dump(sm);
+  dump(main_sm);
+
+  std::cout<<std::endl;
+  dump(overall_sm);
 }
