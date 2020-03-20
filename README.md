@@ -27,22 +27,20 @@ struct Standing : State
 
 ```
 struct main_fsm {
-     auto operator()() const {
+  auto operator()() const {
     using namespace sml;
     return make_transition_table(
-        *state<Installation> + event<sitting_button>    / EnablingStops            = state<Sitting>,
-        state<Sitting>       + event<standing_up_button> [ is_chair_height_valid ] = state<Standing>,
-        state<Standing>      + event<walking_button>                               = state<Walking>,
-        state<Standing>      + event<turning_button>                               = state<Turning>,
-        state<Standing>      + event<exercising_button>                            = state<Exercising>,
-        state<Standing>      + event<sitting_down_button>                          = state<Sitting>,
-        state<Walking>       + event<standing_button>                              = state<Standing>,
-        state<Turning>       + event<standing_button>                              = state<Standing>,
-        state<Exercising>    + event<standing_button>                              = state<Standing>,
-        state<Sitting>       + event<installation_button> / DisablingStops         = state<Installation>,
-        state<Installation>  + event<kill>                                         = X
+      "Sitting"_s       <=*"Installation"_s   + event<sitting_button>    / EnablingStops,
+      "Standing"_s      <= "Sitting"_s        + event<standing_up_button> [ is_chair_height_valid ],
+      state<walk_fsm>   <= "Standing"_s       + event<walking_button>,
+      "Turning"_s       <= "Standing"_s       + event<turning_button>,
+      "Exercising"_s    <= "Standing"_s       + event<exercising_button>,
+      "Sitting"_s       <= "Standing"_s       + event<sitting_down_button>,
+      "Standing"_s      <= state<walk_fsm>    + event<finished>,
+      "Standing"_s      <= "Turning"_s        + event<standing_button>,
+      "Standing"_s      <= "Exercising"_s     + event<standing_button>,
+      "Installation"_s  <= "Sitting"_s        + event<installation_button> / DisablingStops
     );
   }
 };
-}
 ```
