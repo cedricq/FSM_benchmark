@@ -6,10 +6,14 @@
 #include <iostream>
 #include <string>
 #include <typeinfo>
+#include <regex>
+#include <fstream>
 
 // This is to output state machine in Plant UML format
 template <class T>
-void dump_transition() noexcept {
+void dump_transition(std::ofstream& o) noexcept {
+  std::string line;
+
   auto src_state = std::string{sml::aux::string<typename T::src_state>{}.c_str()};
   auto dst_state = std::string{sml::aux::string<typename T::dst_state>{}.c_str()};
   if (dst_state == "X") {
@@ -17,44 +21,86 @@ void dump_transition() noexcept {
   }
 
   if (T::initial) {
-    std::cout << "[*] --> " << src_state << std::endl;
+      line += "[*] --> ";
+      line += src_state;
+      line += "\n";
   }
 
-  std::cout << src_state << " --> " << dst_state;
+  line += src_state;
+  line += " --> ";
+  line += dst_state;
 
   const auto has_event = !sml::aux::is_same<typename T::event, sml::anonymous>::value;
   const auto has_guard = !sml::aux::is_same<typename T::guard, sml::front::always>::value;
   const auto has_action = !sml::aux::is_same<typename T::action, sml::front::none>::value;
 
   if (has_event || has_guard || has_action) {
-    std::cout << " :";
+      line += " :";
   }
 
   if (has_event) {
-    std::cout << " " << boost::sml::aux::get_type_name<typename T::event>();
+      line += " ";
+      line += boost::sml::aux::get_type_name<typename T::event>();
   }
 
   if (has_guard) {
-    std::cout << " [" << boost::sml::aux::get_type_name<typename T::guard::type>() << "]";
+      line += " [";
+      line += boost::sml::aux::get_type_name<typename T::guard::type>();
+      line += "]";
   }
 
   if (has_action) {
-    std::cout << " / " << boost::sml::aux::get_type_name<typename T::action::type>();
+      line += " / ";
+      line += boost::sml::aux::get_type_name<typename T::action::type>();
   }
 
-  std::cout << std::endl;
+  try
+  {
+      std::smatch m;
+
+      std::regex re("\\{anonymous\\}::");
+      line = std::regex_replace(line, re, "");
+      std::regex re2("/ [a-zA-Z0-9_]*::operator\\(\\)\\(\\) const::<lambda\\(\\)>");
+      //std::regex_search (line,m,re2);
+      line = std::regex_replace(line, re2, "");
+
+
+      std::regex re3("boost::sml::v1_1_0::back::sm<boost::sml::v1_1_0::back::sm_policy<(.*)> >");
+      std::string state ="";
+      std::regex_search (line,m,re3);
+      for (auto x : m) state = x;
+      line = std::regex_replace(line, re3, state);
+
+      std::regex re4("\\/ <lambda\\(\\)>");
+      line = std::regex_replace(line, re4, "");
+
+      //std::regex re5("\\[[a-zA-Z0-9_<>\\(\\)&]*)^\\*\\]");
+      std::regex re5("<lambda\\(const [a-zA-Z0-9_&]*\\)>");
+      line = std::regex_replace(line, re5, "cond");
+  }
+  catch ( const std::exception& e )
+  {
+      std::cout<<"regex_error exception: " <<e.what() <<std::endl;
+  }
+  catch ( ... )
+  {
+      std::cout<<"regex_error exception: ..." <<std::endl;
+  }
+
+  std::cout<<line.c_str() <<std::endl;
+  o<<line.c_str() <<"\n";
 }
 
 template <template <class...> class T, class... Ts>
-void dump_transitions(const T<Ts...>&) noexcept {
-  int _[]{0, (dump_transition<Ts>(), 0)...};
+void dump_transitions(const T<Ts...>&, std::ofstream& o) noexcept {
+  int _[]{0, (dump_transition<Ts>(o), 0)...};
   (void)_;
 }
 
 template <class SM>
-void dump(const SM&) noexcept {
+void dump(const SM&, std::ofstream& o) noexcept {
   std::cout << "@startuml" << std::endl << std::endl;
-  dump_transitions(typename SM::transitions{});
+  dump_transitions(typename SM::transitions{}, o);
   std::cout << std::endl << "@enduml" << std::endl;
 }
 
