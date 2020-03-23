@@ -58,25 +58,22 @@ void dump_transition(std::ofstream& o) noexcept {
   {
       std::smatch m;
 
-      std::regex re("\\{anonymous\\}::");
-      line = std::regex_replace(line, re, "");
-      std::regex re2("/ [a-zA-Z0-9_]*::operator\\(\\)\\(\\) const::<lambda\\(\\)>");
-      //std::regex_search (line,m,re2);
+      std::regex re1("\\{anonymous\\}::");
+      line = std::regex_replace(line, re1, "");
+      std::regex re2("/ [a-zA-Z0-9_]*::operator\\(\\)\\(\\) const::<lambda\\((.*)\\)>");
       line = std::regex_replace(line, re2, "");
 
-
-      std::regex re3("boost::sml::v1_1_0::back::sm<boost::sml::v1_1_0::back::sm_policy<(.*)> >");
+      std::regex re3("boost[a-zA-Z0-9_:]*<boost[a-zA-Z0-9_:]*<([a-zA-Z0-9_: ]*)>[a-zA-Z0-9_: ]*>");
       std::string state ="";
       std::regex_search (line,m,re3);
       for (auto x : m) state = x;
       line = std::regex_replace(line, re3, state);
 
-      std::regex re4("\\/ <lambda\\(\\)>");
+      std::regex re4("\\/ [ a-zA-Z0-9_&:<>\\(\\)]*");
       line = std::regex_replace(line, re4, "");
 
-      //std::regex re5("\\[[a-zA-Z0-9_<>\\(\\)&]*)^\\*\\]");
-      std::regex re5("<lambda\\(const [a-zA-Z0-9_&]*\\)>");
-      line = std::regex_replace(line, re5, "cond");
+      std::regex re5(" \\[[, a-zA-Z0-9_&:<>\\(\\)]*\\]");
+      line = std::regex_replace(line, re5, "");
   }
   catch ( const std::exception& e )
   {

@@ -27,31 +27,38 @@ TEST(BoostSML, MainFSM)
   ASSERT_TRUE(sm.is("Standing"_s));
 
   sm.process_event(turning_button{});
-  ASSERT_TRUE(sm.is("Turning"_s));
+  ASSERT_TRUE(sm.is(state<turn_fsm>));
+  ASSERT_TRUE(sm.is<decltype(state<turn_fsm>)>("TriggerTurn"_s));
+  sm.process_event(imu_detection{});
+  ASSERT_TRUE(sm.is<decltype(state<turn_fsm>)>("FirstStep"_s));
+  sm.process_event(first_step_completed{});
+  ASSERT_TRUE(sm.is<decltype(state<turn_fsm>)>("Turn"_s));
   sm.process_event(standing_button{});
+  ASSERT_TRUE(sm.is<decltype(state<turn_fsm>)>("LastStep"_s));
+  sm.process_event(last_step_completed{});
+  ASSERT_TRUE(sm.is<decltype(state<turn_fsm>)>(X));
+  sm.process_event(finished{});
   ASSERT_TRUE(sm.is("Standing"_s));
 
   sm.process_event(exercising_button{});
-  ASSERT_TRUE(sm.is("Exercising"_s));
+  ASSERT_TRUE(sm.is(state<exercise_fsm>));
+  ASSERT_TRUE(sm.is<decltype(state<exercise_fsm>)>("Exercising"_s));
   sm.process_event(standing_button{});
+  ASSERT_TRUE(sm.is<decltype(state<exercise_fsm>)>(X));
+  sm.process_event(finished{});
   ASSERT_TRUE(sm.is("Standing"_s));
 
   sm.process_event(walking_button{});
   ASSERT_TRUE(sm.is(state<walk_fsm>));
   ASSERT_TRUE(sm.is<decltype(state<walk_fsm>)>("TriggerWalk"_s));
-
   sm.process_event(imu_detection{});
   ASSERT_TRUE(sm.is<decltype(state<walk_fsm>)>("FirstStep"_s));
-
   sm.process_event(first_step_completed{});
   ASSERT_TRUE(sm.is<decltype(state<walk_fsm>)>("Walk"_s));
-
   sm.process_event(standing_button{});
   ASSERT_TRUE(sm.is<decltype(state<walk_fsm>)>("LastStep"_s));
-
   sm.process_event(last_step_completed{});
   ASSERT_TRUE(sm.is<decltype(state<walk_fsm>)>(X));
-
   sm.process_event(finished{});
   ASSERT_TRUE(sm.is("Standing"_s));
 
@@ -118,40 +125,43 @@ TEST(BoostSML, KillingOverallFSM)
     ASSERT_TRUE(sm.is(X));
 }
 
-//TEST(BoostSML, PauseFromWalkFSM)
-//{
-//    using namespace sml;
-//
-//    my_logger logger;
-//    sml::sm<error_fsm, sml::logger<my_logger>> sm{logger};
-//
-//    ASSERT_TRUE(sm.is<decltype(state<installation_fsm>)>("Installation"_s));
-//
-//    sm.process_event(sitting_button{});
-//    ASSERT_TRUE(sm.is<decltype(state<main_sitting_fsm>)>("Sitting"_s));
-//
-//    sm.process_event(standing_up_button{});
-//    ASSERT_TRUE(sm.is<decltype(state<main_sitting_fsm>)>("StandingUp"_s));
-//    sm.process_event(finished{});
-//    ASSERT_TRUE(sm.is<decltype(state<main_standing_fsm>)>("Standing"_s));
-//
-//    sm.process_event(walking_button{});
-//    ASSERT_TRUE(sm.is<decltype(state<main_standing_fsm>)>(state<walk_fsm>));
-//    ASSERT_TRUE(sm.is<decltype(state<walk_fsm>)>("TriggerWalk"_s));
-//
-//    sm.process_event(imu_detection{});
-//    ASSERT_TRUE(sm.is<decltype(state<walk_fsm>)>("FirstStep"_s));
-//
-//    sm.process_event(first_step_completed{});
-//    ASSERT_TRUE(sm.is<decltype(state<walk_fsm>)>("Walk"_s));
-//
-//    sm.process_event(pause{});
-//    ASSERT_TRUE(sm.is("Pause"_s));
-//
-//    sm.process_event(standing_button{});
-//    ASSERT_TRUE(sm.is<decltype(state<installation_fsm>)>("Installation"_s));
-//    //ASSERT_TRUE(sm.is<decltype(state<main_standing_fsm>)>("Standing"_s));
-//}
+TEST(BoostSML, PauseFromWalkFSM)
+{
+    using namespace sml;
+
+    my_logger logger;
+    sml::sm<error_fsm, sml::logger<my_logger>> sm{logger};
+
+    ASSERT_TRUE(sm.is<decltype(state<main_fsm>)>("Installation"_s));
+
+    sm.process_event(sitting_button{});
+    ASSERT_TRUE(sm.is<decltype(state<main_fsm>)>("Sitting"_s));
+
+    sm.process_event(standing_up_button{});
+    ASSERT_TRUE(sm.is<decltype(state<main_fsm>)>("StandingUp"_s));
+
+    sm.process_event(finished{});
+    ASSERT_TRUE(sm.is<decltype(state<main_fsm>)>("Standing"_s));
+
+    sm.process_event(walking_button{});
+    ASSERT_TRUE(sm.is<decltype(state<main_fsm>)>(state<walk_fsm>));
+    ASSERT_TRUE(sm.is<decltype(state<walk_fsm>)>("TriggerWalk"_s));
+
+    sm.process_event(imu_detection{});
+    ASSERT_TRUE(sm.is<decltype(state<walk_fsm>)>("FirstStep"_s));
+
+    sm.process_event(first_step_completed{});
+    ASSERT_TRUE(sm.is<decltype(state<walk_fsm>)>("Walk"_s));
+
+    sm.process_event(pause{});
+    ASSERT_TRUE(sm.is<decltype(state<main_fsm>)>("Pause"_s));
+
+    sm.process_event(sitting_button{});
+    ASSERT_TRUE(sm.is<decltype(state<main_fsm>)>("Pause"_s));
+
+    sm.process_event(standing_button{});
+    ASSERT_TRUE(sm.is<decltype(state<main_fsm>)>("Standing"_s));
+}
 
 TEST(BoostSML, MainStandingFSM_2_UML)
 {

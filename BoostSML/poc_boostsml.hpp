@@ -21,9 +21,6 @@ struct standing_button {};
 struct exercising_button {};
 struct turning_button {};
 struct sitting_down_button {};
-struct now_sitting {};
-struct now_standing {};
-struct now_installation {};
 struct installation_button {};
 struct kill {};
 struct time_out {};
@@ -39,6 +36,15 @@ struct gentle_trap {};
 struct trap{};
 struct alert{};
 
+
+// Actions
+const auto EnablingStops = [] {std::cout<<"stops are enabled" <<std::endl;};
+const auto DisablingStops = [] {std::cout<<"stops are disabled" <<std::endl;};
+
+// Guards
+const auto is_chair_height_valid = [](const auto&) { std::cout<<"chair height is valid" <<std::endl; return true; };
+const auto is_vertical = [](const auto&) { std::cout<<"exo is vertical" <<std::endl; return true; };
+
 struct walk_fsm {
   auto operator()() const {
     using namespace sml;
@@ -51,10 +57,26 @@ struct walk_fsm {
   }
 };
 
+struct turn_fsm {
+  auto operator()() const {
+    using namespace sml;
+    return make_transition_table(
+       "FirstStep"_s  <= *"TriggerTurn"_s  + event<imu_detection>,
+       "Turn"_s       <= "FirstStep"_s     + event<first_step_completed>,
+       "LastStep"_s   <= "Turn"_s          + event<standing_button>,
+       X              <= "LastStep"_s      + event<last_step_completed>
+    );
+  }
+};
 
-const auto is_chair_height_valid = [](const standing_up_button&) { std::cout<<"chair valid" <<std::endl; return true; };
-const auto EnablingStops = [] {std::cout<<"stops enabled" <<std::endl;};
-const auto DisablingStops = [] {std::cout<<"stops disabled" <<std::endl;};
+struct exercise_fsm {
+  auto operator()() const {
+    using namespace sml;
+    return make_transition_table(
+       X  <= *"Exercising"_s   + event<standing_button>
+    );
+  }
+};
 
 struct main_fsm {
   auto operator()() const {
@@ -71,14 +93,19 @@ struct main_fsm {
 
         state<walk_fsm>  <= "Standing"_s       + event<walking_button>,
         "Standing"_s     <= state<walk_fsm>    + event<finished>,
+        "Pause"_s        <= state<walk_fsm>    + event<pause>,
 
-        "Turning"_s      <= "Standing"_s       + event<turning_button>,
-        "Standing"_s     <= "Turning"_s        + event<standing_button>,
+        state<turn_fsm>  <= "Standing"_s       + event<turning_button>,
+        "Standing"_s     <= state<turn_fsm>    + event<finished>,
+        "Pause"_s        <= state<turn_fsm>    + event<pause>,
 
-        "Exercising"_s   <= "Standing"_s       + event<exercising_button>,
-        "Standing"_s     <= "Exercising"_s     + event<standing_button>
 
-        //,"Pause"_s        <= event<pause> / [] { std::cout << "PAUSE from error_fsm !" << std::endl; }
+        state<exercise_fsm> <= "Standing"_s        + event<exercising_button>,
+        "Standing"_s        <= state<exercise_fsm> + event<finished>,
+        "Pause"_s           <= state<exercise_fsm> + event<pause>,
+
+        "Standing"_s     <=  "Pause"_s         + event<standing_button> [ is_vertical ],
+        "Sitting"_s      <=  "Pause"_s         + event<sitting_button> [ !is_vertical ]
     );
   }
 };
@@ -90,13 +117,9 @@ struct error_fsm {
     return make_transition_table(
         state<main_fsm> <= *"Running"_s / DisablingStops,
 
-        "Pause"_s       <= state<main_fsm> + event<pause> / [] { std::cout << "PAUSE from error_fsm !" << std::endl; },
-        //state<main_fsm> <= "Pause"_s       + event<standing_button> / [] { std::cout << "Back to Main FSM standing !" << std::endl; },
-        //state<main_fsm> <= "Pause"_s       + event<sitting_button> / [] { std::cout << "Back to Main FSM sitting !" << std::endl; },
-
         "GentleTrap"_s  <= state<main_fsm> + event<gentle_trap> / [] { std::cout << "No Error -> Gentle Trap !!" << std::endl; },
 
-        "Trap"_s        <= event<trap> / [] { std::cout << "No Error -> Trap !!" << std::endl; },
+        "Trap"_s        <= state<main_fsm> + event<trap> / [] { std::cout << "No Error -> Trap !!" << std::endl; },
         "Trap"_s        <= "GentleTrap"_s  + event<finished> / [] { std::cout << "Gentle Trap finished -> TRAP !!" << std::endl; },
         "Trap"_s        <= "GentleTrap"_s  + event<gentle_trap> / [] { std::cout << "re-Gentle Trap -> TRAP !!" << std::endl; },
         "Trap"_s        <= "GentleTrap"_s  + event<trap> / [] { std::cout << "Gentle Trap trapped -> TRAP !!" << std::endl; },
