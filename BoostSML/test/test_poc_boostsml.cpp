@@ -42,7 +42,7 @@ TEST(BoostSML, MainFSM)
   ASSERT_TRUE(sm.is(state<exercise_fsm>));
   ASSERT_TRUE(sm.is<decltype(state<exercise_fsm>)>("Exercising"_s));
   sm.process_event(standing_button{});
-  ASSERT_TRUE(sm.is<decltype(state<exercise_fsm>)>(X));
+  ASSERT_TRUE(sm.is<decltype(state<exercise_fsm>)>("FinishingExercise"_s));
   sm.process_event(finished{});
   ASSERT_TRUE(sm.is("Standing"_s));
 
@@ -150,13 +150,10 @@ TEST(BoostSML, PauseFromWalkFSM)
     ASSERT_TRUE(sm.is<decltype(state<walk_fsm>)>("Walk"_s));
 
     sm.process_event(pause{});
-    ASSERT_TRUE(sm.is<decltype(state<main_fsm>)>("RecoverPause"_s));
+    ASSERT_TRUE(sm.is<decltype(state<recover_and_pause_fsm>)>("RecoverStationary"_s));
 
     sm.process_event(finished{});
-    ASSERT_TRUE(sm.is<decltype(state<main_fsm>)>("Pause"_s));
-
-    sm.process_event(sitting_button{});
-    ASSERT_TRUE(sm.is<decltype(state<main_fsm>)>("Pause"_s));
+    ASSERT_TRUE(sm.is<decltype(state<pause_fsm>)>("Pause"_s));
 
     sm.process_event(standing_button{});
     ASSERT_TRUE(sm.is<decltype(state<main_fsm>)>("Standing"_s));
@@ -179,10 +176,10 @@ TEST(BoostSML, PauseFromStandingUpFSM)
     ASSERT_TRUE(sm.is<decltype(state<main_fsm>)>("StandingUp"_s));
 
     sm.process_event(pause{});
-    ASSERT_TRUE(sm.is<decltype(state<main_fsm>)>("Pause"_s));
+    ASSERT_TRUE(sm.is<decltype(state<pause_fsm>)>("Pause"_s));
 
     sm.process_event(sitting_button{});
-    ASSERT_TRUE(sm.is<decltype(state<main_fsm>)>("Pause"_s));
+    ASSERT_TRUE(sm.is<decltype(state<pause_fsm>)>("Pause"_s));
 
     sm.process_event(standing_button{});
     ASSERT_TRUE(sm.is<decltype(state<main_fsm>)>("Standing"_s));

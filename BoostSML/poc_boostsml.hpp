@@ -44,6 +44,25 @@ const auto DisablingStops = [] {std::cout<<"stops are disabled" <<std::endl;};
 const auto is_chair_height_valid = [](const auto&) { std::cout<<"chair height is valid" <<std::endl; return true; };
 const auto is_vertical = [](const auto&) { std::cout<<"exo is vertical" <<std::endl; return true; };
 
+
+struct pause_fsm {
+  auto operator()() const {
+    using namespace sml;
+    return make_transition_table(
+        "Pause"_s  <= *"EntryPause"_s
+    );
+  }
+};
+
+struct recover_and_pause_fsm {
+  auto operator()() const {
+    using namespace sml;
+    return make_transition_table(
+       state<pause_fsm>  <= *"RecoverStationary"_s + event<finished>
+    );
+  }
+};
+
 struct walk_fsm {
   auto operator()() const {
     using namespace sml;
@@ -70,7 +89,8 @@ struct exercise_fsm {
   auto operator()() const {
     using namespace sml;
     return make_transition_table(
-       X  <= *"Exercising"_s   + event<standing_button>
+        "Exercising"_s          <= *"EntryExercising"_s,
+        "FinishingExercise"_s   <= "Exercising"_s       + event<standing_button>
     );
   }
 };
@@ -79,34 +99,33 @@ struct main_fsm {
   auto operator()() const {
     using namespace sml;
     return make_transition_table(
-        "Sitting"_s         <= *"Installation"_s   + event<sitting_button> / EnablingStops,
-        "Installation"_s    <= "Sitting"_s         + event<installation_button> / DisablingStops,
+        "Sitting"_s         <= *"Installation"_s            + event<sitting_button> / EnablingStops,
+        "Installation"_s    <= "Sitting"_s                  + event<installation_button> / DisablingStops,
 
-        "StandingUp"_s      <= "Sitting"_s         + event<standing_up_button> [ is_chair_height_valid ],
-        "Standing"_s        <= "StandingUp"_s      + event<finished>,
-        "Pause"_s           <= "StandingUp"_s      + event<pause>,
+        "StandingUp"_s      <= "Sitting"_s                  + event<standing_up_button> [ is_chair_height_valid ],
+        "Standing"_s        <= "StandingUp"_s               + event<finished>,
+        state<pause_fsm>    <= "StandingUp"_s               + event<pause>,
 
-        "SittingDown"_s     <= "Standing"_s        + event<sitting_down_button>,
-        "Sitting"_s         <= "SittingDown"_s     + event<finished>,
-        "Pause"_s           <= "SittingDown"_s     + event<pause>,
+        "SittingDown"_s     <= "Standing"_s                 + event<sitting_down_button>,
+        "Sitting"_s         <= "SittingDown"_s              + event<finished>,
+        state<pause_fsm>    <= "SittingDown"_s              + event<pause>,
 
-        state<walk_fsm>     <= "Standing"_s        + event<walking_button>,
-        "Standing"_s        <= state<walk_fsm>     + event<finished>,
-        "RecoverPause"_s    <= state<walk_fsm>     + event<pause>,
+        state<walk_fsm>  <= "Standing"_s                    + event<walking_button>,
+        "Standing"_s     <= state<walk_fsm>                 + event<finished>,
+        state<recover_and_pause_fsm> <= state<walk_fsm>     + event<pause>,
 
-        state<turn_fsm>     <= "Standing"_s        + event<turning_button>,
-        "Standing"_s        <= state<turn_fsm>     + event<finished>,
-        "RecoverPause"_s    <= state<turn_fsm>     + event<pause>,
+        state<turn_fsm>  <= "Standing"_s                    + event<turning_button>,
+        "Standing"_s     <= state<turn_fsm>                 + event<finished>,
+        state<recover_and_pause_fsm> <= state<turn_fsm>     + event<pause>,
 
+        state<exercise_fsm> <= "Standing"_s                 + event<exercising_button>,
+        "Standing"_s        <= state<exercise_fsm>          + event<finished>,
+        state<recover_and_pause_fsm> <= state<exercise_fsm> + event<pause>,
 
-        state<exercise_fsm> <= "Standing"_s        + event<exercising_button>,
-        "Standing"_s        <= state<exercise_fsm> + event<finished>,
-        "RecoverPause"_s    <= state<exercise_fsm> + event<pause>,
-
-        "Standing"_s        <=  "Pause"_s          + event<standing_button> [ is_vertical ],
-        "Sitting"_s         <=  "Pause"_s          + event<sitting_button> [ !is_vertical ],
-
-        "Pause"_s           <=  "RecoverPause"_s   + event<finished>
+        "Standing"_s     <= state<recover_and_pause_fsm>    + event<standing_button> [ is_vertical],
+        "Sitting"_s      <= state<recover_and_pause_fsm>    + event<sitting_button> [ not is_vertical],
+        "Standing"_s     <= state<pause_fsm>                + event<standing_button> [ is_vertical],
+        "Sitting"_s      <= state<pause_fsm>                + event<sitting_button> [ not is_vertical]
     );
   }
 };
