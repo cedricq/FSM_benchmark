@@ -4,20 +4,29 @@ version: 2.1
 orbs:
   # Declare a dependency on the welcome-orb
   fsm: circleci/welcome-orb@0.4.1
-# Orchestrate or schedule a set of jobs
+
+jobs:
+  build:
+    steps:
+      - uses: checkout
+      - run: 
+        name: cmake
+        command: mkdir build; cd build; cmake ..
+      - run:
+        name: make
+        command: cd build/; make
+      - run: 
+        name: test
+        run: cd build/; ctest
+
 workflows:
-  # Name the workflow "welcome"
-  "FSM workflow":
-  jobs:
-      build:
-          steps:
-          - uses: checkout
-          - run: 
-              name: cmake
-              command: mkdir build; cd build; cmake ..
-          - run:
-              name: make
-              command: cd build/; make
-          - run: 
-              name: test
-              run: cd build/; ctest
+  version: 2.1
+  build_and_test:
+    jobs:
+      - build
+      #- test:
+      #    requires:
+      #      - build
+      #    filters:
+      #      branches:
+      #        only: master
