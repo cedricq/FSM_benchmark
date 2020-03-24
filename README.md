@@ -2,7 +2,7 @@
 
 ## TinyFSM
 
-```
+```c++
 struct Installation : State
 {
   void entry() override { std::cout << "* State is Installation" << std::endl; };
@@ -25,7 +25,7 @@ struct Standing : State
 
 ## Boost.SML
 
-```
+```c++
 struct main_fsm {
   auto operator()() const {
     using namespace sml;
@@ -44,3 +44,57 @@ struct main_fsm {
   }
 };
 ```
+
+```c++
+struct walk_fsm {
+  auto operator()() const {
+    using namespace sml;
+    return make_transition_table(
+       "FirstStep"_s  <= *"TriggerWalk"_s  + event<imu_detection>,
+       "Walk"_s       <= "FirstStep"_s     + event<first_step_completed>,
+       "LastStep"_s   <= "Walk"_s          + event<standing_button>
+    );
+  }
+};
+```
+
+
+
+## Boost.MSM
+
+```c++
+ struct transition_table : mpl::vector<
+            //      Start            Event                   Next                  Action               Guard
+            //    +---------------+-----------------------+-------------------+---------------------+----------------------+
+            a_row < Installation  , sitting_button        , Sitting           , &m::EnableStops         >,
+            //    +---------------+-----------------------+-------------------+---------------------+----------------------+
+            a_row < Sitting       , installation_button   , Installation      , &m::DisableStops        >,
+            _row <  Sitting       , standing_up_button    , StandingUp        >,
+            //    +---------------+-----------------------+-------------------+---------------------+----------------------+
+            _row < StandingUp     , finished              , Standing          >,
+            //    +---------------+-----------------------+-------------------+---------------------+----------------------+
+            _row < Standing       , sitting_down_button   , SittingDown       >,
+            _row < Standing       , walking_button        , Walk              >,
+            _row < Standing       , turning_button        , Turn              >,
+            //    +---------------+-----------------------+-------------------+---------------------+----------------------+
+            _row < SittingDown    , finished              , Sitting           >,
+            //    +---------------+-----------------------+-------------------+---------------------+----------------------+
+            _row < Walk           , finished              , Standing          >,
+            //    +---------------+-----------------------+-------------------+---------------------+----------------------+
+            _row < Turn           , finished              , Standing          >
+            //    +---------------+-----------------------+-------------------+---------------------+----------------------+
+        > {};
+
+```
+
+```c++
+struct transition_table : mpl::vector3<
+        //      Start       Event                    Next             Action               Guard
+        //    +------------+----------------------+---------------+-----------------------+---------+
+        a_row < TriggerWalk, imu_detection        , FirstStep     , &wlk::StartWalking >,
+        _row  < FirstStep  , first_step_completed , Walking             >,
+        a_row < Walking    , standing_button      , LastStep      , &wlk::StopWalking  >
+        //    +------------+----------------------+---------------+------------------------+--------+
+    > {};
+```
+
