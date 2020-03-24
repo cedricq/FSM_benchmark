@@ -9,5 +9,13 @@ workflows:
   # Name the workflow "welcome"
   welcome:
     # Run the welcome/run job in its own container
-    jobs:
-      - welcome/run
+      build:
+          runs-on: self-hosted
+          steps:
+          - uses: actions/checkout@v2
+          - name: cmake
+              run: mkdir build; cd build; cmake ..
+          - name: make
+              run: cd build/; make
+          - name: run
+              run: cd build/; ctest
