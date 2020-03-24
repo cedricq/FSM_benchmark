@@ -10,14 +10,14 @@ jobs:
     steps:
       - uses: checkout
       - run: 
-        name: cmake
-        command: mkdir build; cd build; cmake ..
+          name: cmake
+          command: mkdir build; cd build; cmake ..
       - run:
-        name: make
-        command: cd build/; make
+          name: make
+          command: cd build/; make
       - run: 
-        name: test
-        run: cd build/; ctest
+          name: test
+          run: cd build/; ctest
 
 workflows:
   version: 2.1
