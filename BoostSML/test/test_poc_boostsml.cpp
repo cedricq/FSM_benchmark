@@ -35,8 +35,6 @@ TEST(BoostSML, MainFSM)
   ASSERT_TRUE(sm.is<decltype(state<turn_fsm>)>("Turn"_s));
   sm.process_event(standing_button{});
   ASSERT_TRUE(sm.is<decltype(state<turn_fsm>)>("LastStep"_s));
-  sm.process_event(last_step_completed{});
-  ASSERT_TRUE(sm.is<decltype(state<turn_fsm>)>(X));
   sm.process_event(finished{});
   ASSERT_TRUE(sm.is("Standing"_s));
 
@@ -57,8 +55,6 @@ TEST(BoostSML, MainFSM)
   ASSERT_TRUE(sm.is<decltype(state<walk_fsm>)>("Walk"_s));
   sm.process_event(standing_button{});
   ASSERT_TRUE(sm.is<decltype(state<walk_fsm>)>("LastStep"_s));
-  sm.process_event(last_step_completed{});
-  ASSERT_TRUE(sm.is<decltype(state<walk_fsm>)>(X));
   sm.process_event(finished{});
   ASSERT_TRUE(sm.is("Standing"_s));
 
@@ -154,6 +150,9 @@ TEST(BoostSML, PauseFromWalkFSM)
     ASSERT_TRUE(sm.is<decltype(state<walk_fsm>)>("Walk"_s));
 
     sm.process_event(pause{});
+    ASSERT_TRUE(sm.is<decltype(state<main_fsm>)>("RecoverPause"_s));
+
+    sm.process_event(finished{});
     ASSERT_TRUE(sm.is<decltype(state<main_fsm>)>("Pause"_s));
 
     sm.process_event(sitting_button{});
@@ -162,6 +161,33 @@ TEST(BoostSML, PauseFromWalkFSM)
     sm.process_event(standing_button{});
     ASSERT_TRUE(sm.is<decltype(state<main_fsm>)>("Standing"_s));
 }
+
+
+TEST(BoostSML, PauseFromStandingUpFSM)
+{
+    using namespace sml;
+
+    my_logger logger;
+    sml::sm<error_fsm, sml::logger<my_logger>> sm{logger};
+
+    ASSERT_TRUE(sm.is<decltype(state<main_fsm>)>("Installation"_s));
+
+    sm.process_event(sitting_button{});
+    ASSERT_TRUE(sm.is<decltype(state<main_fsm>)>("Sitting"_s));
+
+    sm.process_event(standing_up_button{});
+    ASSERT_TRUE(sm.is<decltype(state<main_fsm>)>("StandingUp"_s));
+
+    sm.process_event(pause{});
+    ASSERT_TRUE(sm.is<decltype(state<main_fsm>)>("Pause"_s));
+
+    sm.process_event(sitting_button{});
+    ASSERT_TRUE(sm.is<decltype(state<main_fsm>)>("Pause"_s));
+
+    sm.process_event(standing_button{});
+    ASSERT_TRUE(sm.is<decltype(state<main_fsm>)>("Standing"_s));
+}
+
 
 TEST(BoostSML, MainStandingFSM_2_UML)
 {
