@@ -1,6 +1,3 @@
-#ifndef BOOSTSML_POC_BOOSTSML_HPP_
-#define BOOSTSML_POC_BOOSTSML_HPP_
-
 #include "../poc_boostsml.hpp"
 
 #include "gtest/gtest.h"
@@ -224,4 +221,3 @@ TEST(BoostSML, OverallFSM_2_UML)
 
 }  // namespace
 
-#endif

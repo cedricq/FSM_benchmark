@@ -1,3 +1,5 @@
+#ifndef POC_BOOSTSML_HPP
+#define POC_BOOSTSML_HPP
 // $CXX -std=c++14 main_fsm.cpp
 #include "sml.hpp"
 
@@ -146,4 +148,4 @@ struct overall_fsm {
 };
 
 }  // namespace
-
+#endif
