@@ -28,7 +28,6 @@ struct time_out {};
 struct imu_detection {};
 struct imu_timeout {};
 struct first_step_completed {};
-struct last_step_completed {};
 struct finished {};
 // Errror events
 struct pause{};
@@ -51,8 +50,7 @@ struct walk_fsm {
     return make_transition_table(
        "FirstStep"_s  <= *"TriggerWalk"_s  + event<imu_detection>,
        "Walk"_s       <= "FirstStep"_s     + event<first_step_completed>,
-       "LastStep"_s   <= "Walk"_s          + event<standing_button>,
-       X              <= "LastStep"_s      + event<last_step_completed>
+       "LastStep"_s   <= "Walk"_s          + event<standing_button>
     );
   }
 };
@@ -63,8 +61,7 @@ struct turn_fsm {
     return make_transition_table(
        "FirstStep"_s  <= *"TriggerTurn"_s  + event<imu_detection>,
        "Turn"_s       <= "FirstStep"_s     + event<first_step_completed>,
-       "LastStep"_s   <= "Turn"_s          + event<standing_button>,
-       X              <= "LastStep"_s      + event<last_step_completed>
+       "LastStep"_s   <= "Turn"_s          + event<standing_button>
     );
   }
 };
@@ -82,30 +79,34 @@ struct main_fsm {
   auto operator()() const {
     using namespace sml;
     return make_transition_table(
-        "Sitting"_s      <= *"Installation"_s  + event<sitting_button> / EnablingStops,
-        "Installation"_s <= "Sitting"_s        + event<installation_button> / DisablingStops,
+        "Sitting"_s         <= *"Installation"_s   + event<sitting_button> / EnablingStops,
+        "Installation"_s    <= "Sitting"_s         + event<installation_button> / DisablingStops,
 
-        "StandingUp"_s   <= "Sitting"_s        + event<standing_up_button> [ is_chair_height_valid ],
-        "Standing"_s     <= "StandingUp"_s     + event<finished>,
+        "StandingUp"_s      <= "Sitting"_s         + event<standing_up_button> [ is_chair_height_valid ],
+        "Standing"_s        <= "StandingUp"_s      + event<finished>,
+        "Pause"_s           <= "StandingUp"_s      + event<pause>,
 
-        "SittingDown"_s   <= "Standing"_s      + event<sitting_down_button>,
-        "Sitting"_s     <= "SittingDown"_s     + event<finished>,
+        "SittingDown"_s     <= "Standing"_s        + event<sitting_down_button>,
+        "Sitting"_s         <= "SittingDown"_s     + event<finished>,
+        "Pause"_s           <= "SittingDown"_s     + event<pause>,
 
-        state<walk_fsm>  <= "Standing"_s       + event<walking_button>,
-        "Standing"_s     <= state<walk_fsm>    + event<finished>,
-        "Pause"_s        <= state<walk_fsm>    + event<pause>,
+        state<walk_fsm>     <= "Standing"_s        + event<walking_button>,
+        "Standing"_s        <= state<walk_fsm>     + event<finished>,
+        "RecoverPause"_s    <= state<walk_fsm>     + event<pause>,
 
-        state<turn_fsm>  <= "Standing"_s       + event<turning_button>,
-        "Standing"_s     <= state<turn_fsm>    + event<finished>,
-        "Pause"_s        <= state<turn_fsm>    + event<pause>,
+        state<turn_fsm>     <= "Standing"_s        + event<turning_button>,
+        "Standing"_s        <= state<turn_fsm>     + event<finished>,
+        "RecoverPause"_s    <= state<turn_fsm>     + event<pause>,
 
 
         state<exercise_fsm> <= "Standing"_s        + event<exercising_button>,
         "Standing"_s        <= state<exercise_fsm> + event<finished>,
-        "Pause"_s           <= state<exercise_fsm> + event<pause>,
+        "RecoverPause"_s    <= state<exercise_fsm> + event<pause>,
 
-        "Standing"_s     <=  "Pause"_s         + event<standing_button> [ is_vertical ],
-        "Sitting"_s      <=  "Pause"_s         + event<sitting_button> [ !is_vertical ]
+        "Standing"_s        <=  "Pause"_s          + event<standing_button> [ is_vertical ],
+        "Sitting"_s         <=  "Pause"_s          + event<sitting_button> [ !is_vertical ],
+
+        "Pause"_s           <=  "RecoverPause"_s   + event<finished>
     );
   }
 };
