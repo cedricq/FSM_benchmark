@@ -2,16 +2,12 @@
 #define MAIN_FSM_HPP
 
 #include <iostream>
-// back-end
-//#include <boost/msm/front/euml/stl.hpp>
 #include <boost/msm/back/state_machine.hpp>
-//front-end
 #include <boost/msm/front/euml/euml.hpp>
 #include <boost/msm/front/state_machine_def.hpp>
 
 #include "events.hpp"
-//#include "walk_fsm.hpp"
-//#include "turn_fsm.hpp"
+#include "sub_fsm.hpp"
 
 using namespace std;
 using namespace boost::msm::front::euml;
@@ -42,51 +38,11 @@ namespace
         }
     };
 
-    //BOOST_MSM_EUML_STATE(( installation_entry, installation_exit),Installation)
     BOOST_MSM_EUML_STATE((installation_entry, installation_exit, attributes_ << stopsEnabled),Installation)
     BOOST_MSM_EUML_STATE((),Sitting)
     BOOST_MSM_EUML_STATE((),StandingUp)
     BOOST_MSM_EUML_STATE((),Standing)
     BOOST_MSM_EUML_STATE((),SittingDown)
-
-    // Substates
-    BOOST_MSM_EUML_STATE((),TriggerWalk)
-    BOOST_MSM_EUML_STATE((),FirstStep)
-    BOOST_MSM_EUML_STATE((),Walking)
-    BOOST_MSM_EUML_STATE((),Turning)
-    BOOST_MSM_EUML_STATE((),LastStep)
-
-   BOOST_MSM_EUML_TRANSITION_TABLE((
-        //  +------------------------------------------------------------------------------+
-            FirstStep   == TriggerWalk       + imu_detection ,
-            Walking     == FirstStep         + first_step_completed ,
-            LastStep    == Walking           + standing_button
-        //  +------------------------------------------------------------------------------+
-        ), walking_transition_table )
-
-    BOOST_MSM_EUML_DECLARE_STATE_MACHINE( (walking_transition_table, //STT
-                                        init_ << TriggerWalk // Init State
-                                        ),Walk_)
-
-    // choice of back-end
-    typedef msm::back::state_machine<Walk_> Walk_type;
-    Walk_type const Walk;
-
-    BOOST_MSM_EUML_TRANSITION_TABLE((
-         //  +------------------------------------------------------------------------------+
-             FirstStep   == TriggerWalk       + imu_detection ,
-             Walking     == FirstStep         + first_step_completed ,
-             LastStep    == Turning           + standing_button
-         //  +------------------------------------------------------------------------------+
-         ), turning_transition_table )
-
-    BOOST_MSM_EUML_DECLARE_STATE_MACHINE( (walking_transition_table, //STT
-                                         init_ << TriggerWalk // Init State
-                                         ),Turn_)
-
-    // choice of back-end
-    typedef msm::back::state_machine<Turn_> Turn_type;
-    Turn_type const Turn;
 
     // Actions
     BOOST_MSM_EUML_ACTION(EnableStops)
@@ -157,6 +113,118 @@ namespace
                                        main_fsm_) //fsm name
 
     typedef msm::back::state_machine<main_fsm_> main_fsm;
+    main_fsm const MainFSM;
 
+
+    BOOST_MSM_EUML_ACTION(initialisation_entry)
+    {
+        template <class Evt,class Fsm,class State>
+        void operator()(Evt const& ,Fsm& ,State& )
+        {
+            std::cout<<"Initialisation entry" <<std::endl;
+        }
+    };
+
+    BOOST_MSM_EUML_ACTION(initialisation_exit)
+    {
+        template <class Evt,class Fsm,class State>
+        void operator()(Evt const& ,Fsm& ,State& )
+        {
+            std::cout<<"Initialisation exit" <<std::endl;
+        }
+    };
+
+    BOOST_MSM_EUML_STATE((),GentleTrap)
+    BOOST_MSM_EUML_STATE((),Trap)
+    BOOST_MSM_EUML_STATE((),Alert)
+
+    BOOST_MSM_EUML_STATE((initialisation_entry, initialisation_exit),Initializing)
+    BOOST_MSM_EUML_STATE((),Running)
+    BOOST_MSM_EUML_STATE((),Closing)
+    BOOST_MSM_EUML_STATE((),Closed)
+
+    // Actions
+
+    BOOST_MSM_EUML_ACTION(ToGentleTrap)
+    {
+        template <class FSM,class EVT,class SourceState,class TargetState>
+        void operator()(EVT const& evt,FSM&,SourceState& ,TargetState& )
+        {
+            std::cout<<"ACTION - To Gentle Trap" <<std::endl;
+        }
+    };
+
+    BOOST_MSM_EUML_ACTION(ToTrap)
+    {
+        template <class FSM,class EVT,class SourceState,class TargetState>
+        void operator()(EVT const& evt,FSM&,SourceState& ,TargetState& )
+        {
+            std::cout<<"ACTION - To Trap" <<std::endl;
+        }
+    };
+
+    BOOST_MSM_EUML_ACTION(ToAlert)
+    {
+        template <class FSM,class EVT,class SourceState,class TargetState>
+        void operator()(EVT const& evt,FSM&,SourceState& ,TargetState& )
+        {
+            std::cout<<"ACTION - To Alert" <<std::endl;
+        }
+    };
+
+    BOOST_MSM_EUML_ACTION(ToRunning)
+    {
+        template <class FSM,class EVT,class SourceState,class TargetState>
+        void operator()(EVT const& evt,FSM&,SourceState& ,TargetState& )
+        {
+            std::cout<<"ACTION - To Running" <<std::endl;
+        }
+    };
+
+    BOOST_MSM_EUML_ACTION(ToClosing)
+    {
+        template <class FSM,class EVT,class SourceState,class TargetState>
+        void operator()(EVT const& evt,FSM&,SourceState& ,TargetState& )
+        {
+            std::cout<<"ACTION - To Closing" <<std::endl;
+        }
+    };
+
+    BOOST_MSM_EUML_ACTION(ToClosed)
+    {
+        template <class FSM,class EVT,class SourceState,class TargetState>
+        void operator()(EVT const& evt,FSM&,SourceState& ,TargetState& )
+        {
+            std::cout<<"ACTION - To Closed" <<std::endl;
+        }
+    };
+
+    BOOST_MSM_EUML_TRANSITION_TABLE((
+          GentleTrap   == MainFSM         + gentle_trap / ToGentleTrap,
+          //  +------------------------------------------------------------------------------+
+          Trap         == MainFSM         + trap        / ToTrap,
+          Trap         == GentleTrap      + finished    / ToTrap,
+          Trap         == GentleTrap      + gentle_trap / ToTrap,
+          Trap         == GentleTrap      + trap        / ToTrap,
+          Trap         == GentleTrap      + time_out    / ToTrap,
+          //  +------------------------------------------------------------------------------+
+          Alert        == MainFSM         + alert       / ToAlert,
+          Alert        == MainFSM         + kill        / ToAlert,
+          Alert        == GentleTrap      + alert       / ToAlert,
+          Alert        == Trap            + alert       / ToAlert,
+          //  +------------------------------------------------------------------------------+
+          //  +------------------------------------------------------------------------------+
+          Running      == Initializing    + finished    / ToRunning,
+          Closing      == Running         + kill        / ToClosing,
+          Closed       == Closing         + finished    / ToClosed
+          //  +------------------------------------------------------------------------------+
+         ), overall_transition_table)
+
+    BOOST_MSM_EUML_DECLARE_STATE_MACHINE(( overall_transition_table,
+                                        init_ << MainFSM << Initializing
+                                        ),
+                                       overall_fsm_)
+
+    typedef msm::back::state_machine<overall_fsm_> overall_fsm;
 }  // namespace
 #endif

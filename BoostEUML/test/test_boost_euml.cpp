@@ -60,7 +60,7 @@ TEST(BoostEUML, MainFSM)
 
 static std::string const wlk_state_names[] = { "TriggerWalk", "FirstStep", "Walking", "LastStep"};
 
-TEST(BoostMSM, WalkFSM)
+TEST(BoostEUML, WalkFSM)
 {
     Walk_type sm;
     sm.start();
@@ -72,6 +72,27 @@ TEST(BoostMSM, WalkFSM)
     ASSERT_EQ("Walking", wlk_state_names[sm.current_state()[0]]);
     sm.process_event(standing_button());
     ASSERT_EQ("LastStep", wlk_state_names[sm.current_state()[0]]);
+}
+
+static std::string const overall_state_names[] = { "MainFSM", "GentleTrap", "Trap", "Initializing", "Running", "Closing", "Closed"};
+
+TEST(BoostEUML, OverallFSM)
+{
+    overall_fsm sm;
+    sm.start();
+
+    sm.process_event(finished());
+    //ASSERT_EQ("MainFSM", overall_state_names[sm.current_state()[0]]);
+    sm.process_event(gentle_trap());
+    //ASSERT_EQ("GentleTrap", overall_state_names[sm.current_state()[0]]);
+    sm.process_event(trap());
+    //ASSERT_EQ("Trap", overall_state_names[sm.current_state()[0]]);
+    sm.process_event(alert());
+    //ASSERT_EQ("Alert", overall_state_names[sm.current_state()[0]]);
+    sm.process_event(kill());
+    //ASSERT_EQ("Closing", overall_state_names[sm.current_state()[0]]);
+    sm.process_event(finished());
+    //ASSERT_EQ("Closed", overall_state_names[sm.current_state()[0]]);
 }
 
 }  // namespace
