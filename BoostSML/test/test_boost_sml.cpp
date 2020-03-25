@@ -1,8 +1,10 @@
-#include "../poc_boostsml.hpp"
-
 #include "gtest/gtest.h"
 
+#include "../main_fsm.hpp"
+
 #include <fstream>
+#include "sml_2_uml.hpp"
+#include "sml_logging.hpp"
 
 namespace {
 

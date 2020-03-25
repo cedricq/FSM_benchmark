@@ -1,5 +1,5 @@
-#ifndef BOOSTMSM_TEST_WALK_FSM_HPP_
-#define BOOSTMSM_TEST_WALK_FSM_HPP_
+#ifndef WALK_FSM_HPP
+#define WALK_FSM_HPP
 
 #include <iostream>
 // back-end

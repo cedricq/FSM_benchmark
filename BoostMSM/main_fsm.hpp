@@ -1,5 +1,5 @@
-#ifndef POC_BOOSTMSM_HPP
-#define POC_BOOSTMSM_HPP
+#ifndef MAIN_FSM_HPP
+#define MAIN_FSM_HPP
 
 #include <iostream>
 // back-end

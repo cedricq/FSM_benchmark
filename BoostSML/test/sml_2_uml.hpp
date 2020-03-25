@@ -1,13 +1,12 @@
-#ifndef BOOSTSML_SML_2_UML_HPP_
-#define BOOSTSML_SML_2_UML_HPP_
-
-#include "sml.hpp"
+#ifndef BOOSTSML_TEST_SML_2_UML_HPP_
+#define BOOSTSML_TEST_SML_2_UML_HPP_
 
 #include <iostream>
 #include <string>
 #include <typeinfo>
 #include <regex>
 #include <fstream>
+#include "../include/sml.hpp"
 
 // This is to output state machine in Plant UML format
 template <class T>
@@ -103,4 +102,4 @@ void dump(const SM&, std::ofstream& o) noexcept {
 
 
 
-#endif /* BOOSTSML_SML_2_UML_HPP_ */
+#endif /* BOOSTSML_TEST_SML_2_UML_HPP_ */

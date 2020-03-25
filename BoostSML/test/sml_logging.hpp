@@ -1,9 +1,8 @@
-#ifndef BOOSTSML_SML_LOGGING_HPP_
-#define BOOSTSML_SML_LOGGING_HPP_
-
-#include "sml.hpp"
+#ifndef BOOSTSML_TEST_SML_LOGGING_HPP_
+#define BOOSTSML_TEST_SML_LOGGING_HPP_
 
 #include <cstdio>
+#include "../include/sml.hpp"
 
 namespace sml = boost::sml;
 
@@ -38,4 +37,4 @@ struct my_logger {
 
 
 
-#endif /* BOOSTSML_SML_LOGGING_HPP_ */
+#endif /* BOOSTSML_TEST_SML_LOGGING_HPP_ */
