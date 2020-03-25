@@ -1,5 +1,5 @@
-#ifndef BOOSTMSM_TEST_TURN_FSM_HPP_
-#define BOOSTMSM_TEST_TURN_FSM_HPP_
+#ifndef TURN_FSM_HPP
+#define TURN_FSM_HPP
 
 #include <iostream>
 // back-end

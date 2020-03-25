@@ -1,42 +1,18 @@
-#ifndef POC_BOOSTSML_HPP
-#define POC_BOOSTSML_HPP
-// $CXX -std=c++14 main_fsm.cpp
-#include "sml.hpp"
+#ifndef MAIN_FSM_HPP
+#define MAIN_FSM_HPP
 
-#include "sml_logging.hpp"
-#include "sml_2_uml.hpp"
+#include "events.hpp"
+#include "sub_fsm.hpp"
 
 #include <cassert>
 #include <iostream>
 #include <string>
 #include <typeinfo>
+#include "include/sml.hpp"
 
 namespace sml = boost::sml;
 
 namespace {
-
-// Main Events
-struct sitting_button {};
-struct standing_up_button {};
-struct walking_button {};
-struct standing_button {};
-struct exercising_button {};
-struct turning_button {};
-struct sitting_down_button {};
-struct installation_button {};
-struct kill {};
-struct time_out {};
-// Sub-Events
-struct imu_detection {};
-struct imu_timeout {};
-struct first_step_completed {};
-struct finished {};
-// Errror events
-struct pause{};
-struct gentle_trap {};
-struct trap{};
-struct alert{};
-
 
 // Actions
 const auto EnablingStops = [] {std::cout<<"stops are enabled" <<std::endl;};
@@ -45,37 +21,6 @@ const auto DisablingStops = [] {std::cout<<"stops are disabled" <<std::endl;};
 // Guards
 const auto is_chair_height_valid = [](const auto&) { std::cout<<"chair height is valid" <<std::endl; return true; };
 const auto is_vertical = [](const auto&) { std::cout<<"exo is vertical" <<std::endl; return true; };
-
-struct walk_fsm {
-  auto operator()() const {
-    using namespace sml;
-    return make_transition_table(
-       "FirstStep"_s  <= *"TriggerWalk"_s  + event<imu_detection>,
-       "Walk"_s       <= "FirstStep"_s     + event<first_step_completed>,
-       "LastStep"_s   <= "Walk"_s          + event<standing_button>
-    );
-  }
-};
-
-struct turn_fsm {
-  auto operator()() const {
-    using namespace sml;
-    return make_transition_table(
-       "FirstStep"_s  <= *"TriggerTurn"_s  + event<imu_detection>,
-       "Turn"_s       <= "FirstStep"_s     + event<first_step_completed>,
-       "LastStep"_s   <= "Turn"_s          + event<standing_button>
-    );
-  }
-};
-
-struct exercise_fsm {
-  auto operator()() const {
-    using namespace sml;
-    return make_transition_table(
-       X  <= *"Exercising"_s   + event<standing_button>
-    );
-  }
-};
 
 struct main_fsm {
   auto operator()() const {
