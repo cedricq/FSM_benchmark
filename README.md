@@ -98,3 +98,38 @@ struct transition_table : mpl::vector3<
     > {};
 ```
 
+
+
+## Boost.eUML
+
+```c++
+BOOST_MSM_EUML_TRANSITION_TABLE((
+          Installation == Sitting         + installation_button  / DisableStops,
+          //  +------------------------------------------------------------------------------+
+          Sitting      == Installation    + sitting_button [not is_vertical]  / EnableStops,
+          Sitting      == SittingDown     + finished ,
+          //  +------------------------------------------------------------------------------+
+          StandingUp   == Sitting         + standing_up_button [is_chair_height_valid],
+          //  +------------------------------------------------------------------------------+
+          Standing     == StandingUp      + finished ,
+          Standing     == Walk            + finished ,
+          Standing     == Turn            + finished ,
+          //  +------------------------------------------------------------------------------+
+          SittingDown  == Standing        + sitting_down_button ,
+          //  +------------------------------------------------------------------------------+
+          Walk         == Standing        + walking_button ,
+          //  +------------------------------------------------------------------------------+
+          Turn         == Standing        + turning_button
+          //  +------------------------------------------------------------------------------+
+         ), main_transition_table)
+```
+
+```c++
+   BOOST_MSM_EUML_TRANSITION_TABLE((
+        //  +------------------------------------------------------------------------------+
+            FirstStep   == TriggerWalk       + imu_detection ,
+            Walking     == FirstStep         + first_step_completed ,
+            LastStep    == Walking           + standing_button
+        //  +------------------------------------------------------------------------------+
+        ), walking_transition_table )
+```

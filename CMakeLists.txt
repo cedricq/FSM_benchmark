@@ -40,8 +40,9 @@ endif()
 include(CTest)
 #enable_testing()
 
-include_directories("BoostMSM")
+include_directories("include")
 
 add_subdirectory (TinyFSM)
 add_subdirectory (BoostSML)
 add_subdirectory (BoostMSM)
+add_subdirectory (BoostEUML)
