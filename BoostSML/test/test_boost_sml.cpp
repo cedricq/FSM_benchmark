@@ -16,9 +16,11 @@ TEST(BoostSML, MainFSM)
   sml::sm<main_fsm, sml::logger<my_logger>> sm{logger};
 
   ASSERT_TRUE(sm.is("Installation"_s));
+  ASSERT_FALSE(stopsEnabled);
 
   sm.process_event(sitting_button{});
   ASSERT_TRUE(sm.is("Sitting"_s));
+  ASSERT_TRUE(stopsEnabled);
 
   sm.process_event(standing_up_button{});
   ASSERT_TRUE(sm.is("StandingUp"_s));
@@ -62,8 +64,10 @@ TEST(BoostSML, MainFSM)
   sm.process_event(finished{});
   ASSERT_TRUE(sm.is("Sitting"_s));
 
+  ASSERT_TRUE(stopsEnabled);
   sm.process_event(installation_button{});
   ASSERT_TRUE(sm.is("Installation"_s));
+  ASSERT_FALSE(stopsEnabled);
 }
 
 TEST(BoostSML, ErrorFSM)
@@ -71,7 +75,7 @@ TEST(BoostSML, ErrorFSM)
   using namespace sml;
 
   my_logger logger;
-  sml::sm<error_fsm, sml::logger<my_logger>> sm{logger};
+  sml::sm<overall_fsm, sml::logger<my_logger>> sm{logger};
 
   ASSERT_TRUE(sm.is<decltype(state<main_fsm>)>("Installation"_s));
 
@@ -109,15 +113,14 @@ TEST(BoostSML, KillingOverallFSM)
     my_logger logger;
     sml::sm<overall_fsm, sml::logger<my_logger>> sm{logger};
 
-    ASSERT_TRUE(sm.is("Initializing"_s));
+    ASSERT_TRUE(sm.is(state<main_fsm>, "Initializing"_s));
     sm.process_event(finished{});
-    ASSERT_TRUE(sm.is(state<error_fsm>));
     ASSERT_TRUE(sm.is<decltype(state<main_fsm>)>("Installation"_s));
 
     sm.process_event(kill{});
-    ASSERT_TRUE(sm.is("Closing"_s));
+    ASSERT_TRUE(sm.is("Alert"_s, "Closing"_s));
     sm.process_event(finished{});
-    ASSERT_TRUE(sm.is(X));
+    ASSERT_TRUE(sm.is("Alert"_s, X));
 }
 
 TEST(BoostSML, PauseFromWalkFSM)
@@ -125,7 +128,7 @@ TEST(BoostSML, PauseFromWalkFSM)
     using namespace sml;
 
     my_logger logger;
-    sml::sm<error_fsm, sml::logger<my_logger>> sm{logger};
+    sml::sm<overall_fsm, sml::logger<my_logger>> sm{logger};
 
     ASSERT_TRUE(sm.is<decltype(state<main_fsm>)>("Installation"_s));
 
@@ -167,7 +170,7 @@ TEST(BoostSML, PauseFromStandingUpFSM)
     using namespace sml;
 
     my_logger logger;
-    sml::sm<error_fsm, sml::logger<my_logger>> sm{logger};
+    sml::sm<overall_fsm, sml::logger<my_logger>> sm{logger};
 
     ASSERT_TRUE(sm.is<decltype(state<main_fsm>)>("Installation"_s));
 
@@ -196,17 +199,6 @@ TEST(BoostSML, MainStandingFSM_2_UML)
     output.open("MainFSM_2_UML.txt");
 
     sml::sm<main_fsm> sm;
-    dump(sm,output);
-}
-
-TEST(BoostSML, ErrorFSM_2_UML)
-{
-    using namespace sml;
-
-    std::ofstream output;
-    output.open("ErrorFSM_2_UML.txt");
-
-    sml::sm<error_fsm> sm;
     dump(sm,output);
 }
 
