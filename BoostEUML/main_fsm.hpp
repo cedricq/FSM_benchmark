@@ -15,7 +15,7 @@ namespace msm = boost::msm;
 
 namespace
 {
-    //states
+    // attributes
     BOOST_MSM_EUML_DECLARE_ATTRIBUTE(bool, stopsEnabled)
 
     BOOST_MSM_EUML_ACTION(installation_entry)
@@ -38,6 +38,7 @@ namespace
         }
     };
 
+    //states
     BOOST_MSM_EUML_STATE((installation_entry, installation_exit, attributes_ << stopsEnabled),Installation)
     BOOST_MSM_EUML_STATE((),Sitting)
     BOOST_MSM_EUML_STATE((),StandingUp)
