@@ -2,3 +2,6 @@
 .project
 .settings
 build/
+.kdev4/
+FSM_benchmark.kdev4
+
