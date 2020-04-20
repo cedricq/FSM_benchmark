@@ -3,6 +3,7 @@
 #include "sml.hpp"
 
 #include <fstream>
+#include <memory>
 #include "sml_logging.hpp"
 
 namespace sml = boost::sml;
@@ -12,9 +13,10 @@ namespace {
     
 class Truc
 {
-    Truc() = default;
-    ~Truc() = default;
+public:
+    Truc();
     
+    ~Truc() = default;
     struct startController{};
     
     struct StartUpFSM {
@@ -22,27 +24,25 @@ class Truc
             using namespace sml;
             return make_transition_table(
                 "CalibrationCheck"_s    <= *"Ready"_s           + event<startController>
-            ) ;
+            );
         }
     };
+    
+    my_logger logger;
+    using fsm_t = sml::sm<StartUpFSM, sml::logger<my_logger>>;
+    std::unique_ptr<fsm_t> sm_;
+};
 
-
-    //sml_wdc_logger::sml_logger logger_;
-    //decltype(StartUpFSM()) sm_{};
-    //sml::sm<typename decltype(StartUpFSM()), sml::logger<sml_wdc_logger::sml_logger>> sm_{logger_};
-
-
-    //sml::sm<decltype(), sml::logger<sml_wdc_logger::sml_logger>> sm_{logger_};
-
-    sml::sm<StartUpFSM> sm_{};
+Truc::Truc()
+{
+    sm_ =  std::make_unique<fsm_t>(logger);
 }
 
 TEST(SML_FSMInClass, test)
 {
-  
+    Truc truc;
+    truc.sm_->process_event(Truc::startController());
 }
-
-
 
 }  // namespace
 
