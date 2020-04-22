@@ -4,6 +4,7 @@
 cmake_minimum_required (VERSION 2.8.11)
 project (FSM_1)
 
+SET(CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} -g")
 
 # Download and unpack googletest at configure time
 configure_file(CMakeLists.txt.in googletest-download/CMakeLists.txt)
@@ -46,3 +47,4 @@ add_subdirectory (TinyFSM)
 add_subdirectory (BoostSML)
 add_subdirectory (BoostMSM)
 add_subdirectory (BoostEUML)
+add_subdirectory (MyFSM)
