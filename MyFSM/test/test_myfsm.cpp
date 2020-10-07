@@ -4,7 +4,7 @@
 
 #include <iostream>
 
-using namespace my_fsm;
+using namespace core;
 
 EventId NoEvent{0, "NoEvent"};
 EventId StartEvent{1, "StartEvent"};
@@ -37,8 +37,8 @@ class StateC : public State_
 
 void Tick(StateManager& sm, EventId& event)
 {    
-    sm->Run();
-    sm->HandleEvent(event) ;
+    sm->run();
+    sm->handleEvent(event) ;
 }
 
 TEST(MyFSM, test)
@@ -69,32 +69,32 @@ TEST(MyFSM, test)
     // Substate transitions
     ADD_TRANSITION (subState,  FinishEvent, stateA);
     
-    mainState->Start();
+    mainState->start();
     
-    ASSERT_TRUE(mainState->IsState("A"));
+    ASSERT_TRUE(mainState->isState("A"));
      
     Tick(mainState, NoEvent);
 
-    ASSERT_TRUE(mainState->IsState("A"));
+    ASSERT_TRUE(mainState->isState("A"));
      
     Tick(mainState, SubEvent);
-    ASSERT_TRUE(mainState->IsState("Sub"));
-    ASSERT_TRUE(subState->IsState("C"));
+    ASSERT_TRUE(mainState->isState("C"));
+    ASSERT_TRUE(subState->isState("C"));
      
     Tick(mainState, FinishEvent);
-    ASSERT_TRUE(mainState->IsState("A"));
+    ASSERT_TRUE(mainState->isState("A"));
     
     Tick(mainState, StartEvent);
-    ASSERT_TRUE(mainState->IsState("B"));
+    ASSERT_TRUE(mainState->isState("B"));
     
     Tick(mainState, FinishEvent);
-    ASSERT_TRUE(mainState->IsState("A"));
+    ASSERT_TRUE(mainState->isState("A"));
     
     Tick(mainState, GuardEvent);
-    ASSERT_TRUE(mainState->IsState("A"));
+    ASSERT_TRUE(mainState->isState("A"));
     
     Tick(mainState, ActionEvent);
-    ASSERT_TRUE(mainState->IsState("B"));
+    ASSERT_TRUE(mainState->isState("B"));
 }
 
 
