@@ -7,11 +7,8 @@
 #include <memory>
 
 #include <iostream>
-#include <stdio.h>
 
-//#include "wdc/core/Logger.h"
-
-#define bool_t bool
+typedef bool bool_t;
 
 namespace core
 {
@@ -30,15 +27,17 @@ namespace core
 #define SET_RUN(state, function) state->setRun(function)
 
 #define MAKE_EVENT_MAPPING(stateEvent, systemEvent, str) EventId const stateEvent { static_cast<int>(systemEvent), static_cast<std::string>(str).c_str()}
+#define CREATE_EVENT_MAPPING(stateEvent, systemEvent, str) stateEvent = { static_cast<int>(systemEvent), static_cast<std::string>(str).c_str()}
 
 ////////////////////////////////////////////////////////////////////////////////////////////////
 /// Default empty guard and action.
 ////////////////////////////////////////////////////////////////////////////////////////////////
-auto NoAction = []() {};
-auto NoGuard  = []() {return true;};
+const auto NoAction = []() {};
+const auto NoGuard  = []() {return true;};
 
 // Forward declaration
 class State_ ;
+
 
 ////////////////////////////////////////////////////////////////////////////////////////////////
 /// Event structure in the context of a state machine
@@ -57,6 +56,7 @@ struct EventId
     {
         return not ( *this == event ) ;
     }
+
 };
 
 ////////////////////////////////////////////////////////////////////////////////////////////////
@@ -73,6 +73,7 @@ struct Transition
 ////////////////////////////////////////////////////////////////////////////////////////////////
 /// Mother class of all states
 ////////////////////////////////////////////////////////////////////////////////////////////////
+
 class State_ : public std::enable_shared_from_this<State_>
 {
 public:
@@ -164,11 +165,7 @@ private:
 ////////////////////////////////////////////////////////////////////////////////////////////////
 using State = std::shared_ptr<State_>;
 
-void displayTransition(std::string const& managerName, std::string const& eventName, std::string const& currentStateName, std::string const& newStateName)
-{
-    //core::Logger::info("[FSM][%s] %s : %s --> %s", managerName().c_str(), eventName.name.c_str(), currentStateName.c_str(), newStateName.c_str());
-    std::cout <<"[FSM][" <<managerName.c_str() <<"] " <<eventName.c_str() <<" : " <<currentStateName.c_str() <<" --> " <<newStateName.c_str() <<std::endl;
-}
+inline State StateTransitionAlreadyComplete = std::make_shared<State_>("StateTransitionAlreadyComplete");
 
 ////////////////////////////////////////////////////////////////////////////////////////////////
 /// Mother class of all state manager handling transitions and which is a State_ as well
@@ -179,30 +176,6 @@ public:
     StateManagerClass_(std::string name) : State_(name) {};
 
     virtual ~StateManagerClass_() {}
-
-    ////////////////////////////////////////////////////////////////////////////////////////////////
-    /// \brief      Checks if in the current state a possible transition exists
-    ///             and if so changes the current state
-    ////////////////////////////////////////////////////////////////////////////////////////////////
-    virtual std::shared_ptr<State_> handleEvent(EventId const& e) override
-    {
-        EventId currentEvent = e;
-        State newState(currentState_->handleEvent(currentEvent));
-
-        if (newState != nullptr)
-        {
-            displayTransition(getName(), currentEvent.name, currentState_->getName(), newState->getName());
-            currentState_->onExit();
-            newState->onEntry();
-            currentState_ = newState;
-        }
-        else
-        {
-            newState = State_::handleEvent(currentEvent);
-            return newState;
-        }
-        return nullptr;
-    }
 
     void start()
     {
@@ -215,24 +188,50 @@ public:
         currentState_->run();
     }
 
-    void onEntry() override
+    ////////////////////////////////////////////////////////////////////////////////////////////////
+    /// \brief      Checks if in the current state a possible transition exists
+    ///             and if so changes the current state
+    ////////////////////////////////////////////////////////////////////////////////////////////////
+    virtual std::shared_ptr<State_> handleEvent(EventId const& e)
+    {
+        EventId currentEvent = e;
+        State newState(currentState_->handleEvent(currentEvent));
+
+        if (newState != nullptr && newState != StateTransitionAlreadyComplete)
+        {
+            displayTransition(getName(), currentEvent.name, currentState_->getName(), newState->getName());
+
+            currentState_->onExit();
+            newState->onEntry();
+            currentState_ = newState;
+            return StateTransitionAlreadyComplete;
+        }
+        else if (newState != StateTransitionAlreadyComplete)
+        {
+            newState = State_::handleEvent(currentEvent);
+            return newState;
+        }
+        return nullptr;
+    }
+
+    virtual void onEntry()
     {
         onEntry_();
         currentState_->onEntry();
     }
 
-    void onExit() override
+    virtual void onExit()
     {
         currentState_->onExit();
         onExit_();
     }
 
-    void reset()
+    virtual void reset()
     {
         currentState_ = initState_ ;
     }
 
-    void setInitState(State state)
+    virtual void setInitState(State state)
     {
         initState_ = state;
         reset();
@@ -240,6 +239,8 @@ public:
 
     bool isState(std::string const& str)
     {
+        if (str != currentState_->getName())
+            std::cout<<"[FSM] Not in " <<str.c_str() <<" but in " <<currentState_->getName().c_str() <<std::endl;
         return str == currentState_->getName();
     }
 
@@ -253,10 +254,20 @@ public:
         return currentState_->getState();
     }
 
-private:
+    virtual void updateSharedMem()
+    {}
+
+protected:
     State initState_ {nullptr};
     State currentState_ {nullptr};
-
+    
+private:
+    void displayTransition(std::string const& managerName, std::string const& eventName, std::string const& currentStateName, std::string const& newStateName)
+    {
+        //core::Logger::info("[FSM][%s] %s : %s --> %s", managerName().c_str(), eventName.name.c_str(), currentStateName.c_str(), newStateName.c_str());
+        std::cout <<"[FSM][" <<managerName.c_str() <<"] " <<eventName.c_str() <<" : " <<currentStateName.c_str() <<" --> " <<newStateName.c_str() <<std::endl;
+    }
+    
 };
 
 ////////////////////////////////////////////////////////////////////////////////////////////////
@@ -265,8 +276,5 @@ private:
 using StateManager = std::shared_ptr<StateManagerClass_>;
 
 } // namespace
-
-
-
 
 #endif
