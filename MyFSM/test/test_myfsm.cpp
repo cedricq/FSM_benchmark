@@ -157,7 +157,7 @@ void createMainStateMachine()
     ADD_TRANSITION (Turning,        FinishEvent,        Standing);
     ADD_TRANSITION (Walking,        FinishEvent,        Standing);
     ADD_TRANSITION (Repositioning,  FinishEvent,        Standing);
-    
+
 }
 
 TEST(MyFSM, CompleteFSM)
@@ -190,5 +190,5 @@ TEST(MyFSM, CompleteFSM)
     ASSERT_TRUE(supraState->isState("Trap"));
     Tick(supraState, CriticalEvent);
     ASSERT_TRUE(supraState->isState("Emergency"));
-    
+
 }
