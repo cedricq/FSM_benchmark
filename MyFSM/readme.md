@@ -1,3 +1,26 @@
+# Build & Run StateMachine unit tests
+
+Prerequisite, you'll need to have gtest built somewhere on yor system. In the CMakeFile.txt file you'll need to point to your gtest path :
+
+```
+set(GTEST_PATH "path/to/your/gtest")
+```
+
+Ensure that you have a gtest libs built and available. CMake is looking at them here FYI:
+
+```
+target_link_libraries(fsm_test ${GTEST_PATH}/build/libgtest_main.a ${GTEST_PATH}/build/libgtest.a)
+```
+Then, run the following commands:
+
+```
+mkdir build
+cd build
+cmake .. -G "MinGW Makefiles"
+make -j8
+./fsm_test.exe
+```
+
 # State Machine Design
 
 The new state machine needs to fix a couple of issues that we are already facing:
@@ -6,9 +29,8 @@ The new state machine needs to fix a couple of issues that we are already facing
 
   <img src="Hierarchical-finite-state-machine-representation-of-the-scavenger-agent-Self-transitions.png" alt="Hierarchical-finite-state-machine" style="zoom:67%;" />
 
-```
 
-```
+
 
 - The possibility to create the state machine at runtime and to have possibly multi instances of them. For instance, if we had a state machine in the motor class then we need to be able to have 12 different instances of that same state machine.
 

@@ -1,21 +1,18 @@
-#ifndef CORE_STATEMACHINE_H_
-#define CORE_STATEMACHINE_H_
+#ifndef STATEMACHINE_H_
+#define STATEMACHINE_H_
 
-#include <string>
-#include <vector>
 #include <functional>
 #include <memory>
+#include <algorithm>
 
-#include <iostream>
+#include <vector>
+//#include <string>
 #include <stdio.h>
 
-//#include "wdc/core/Logger.h"
+#include "NameString.h"
 
-#define bool_t bool
-
-namespace core
+namespace FSM
 {
-
 ////////////////////////////////////////////////////////////////////////////////////////////////
 /// Macro helpers helping defining state machine
 ////////////////////////////////////////////////////////////////////////////////////////////////
@@ -29,33 +26,36 @@ namespace core
 #define SET_ON_EXIT(state, function) state->setOnExit(function)
 #define SET_RUN(state, function) state->setRun(function)
 
-#define MAKE_EVENT_MAPPING(stateEvent, systemEvent, str) EventId const stateEvent { static_cast<int>(systemEvent), static_cast<std::string>(str).c_str()}
+#define MAKE_SIMPLE_EVENT_MAPPING(stateEvent, simpleEvent)   FSM::EventId const stateEvent { simpleEvent.name() }
+#define MAKE_BUTTON_EVENT_MAPPING(stateEvent, buttonEvent)   FSM::EventId const stateEvent { buttonEvent.name() }
+#define MAKE_INTERNAL_EVENT(stateEvent)                      FSM::EventId const stateEvent { "internal_" #stateEvent }
+#define EVENT(simpleEvent)                                   FSM::EventId{simpleEvent.name()}
 
 ////////////////////////////////////////////////////////////////////////////////////////////////
 /// Default empty guard and action.
 ////////////////////////////////////////////////////////////////////////////////////////////////
-auto NoAction = []() {};
-auto NoGuard  = []() {return true;};
+const auto NoAction = []() {};
+const auto NoGuard  = []() {return true;};
 
 // Forward declaration
 class State_ ;
+
 
 ////////////////////////////////////////////////////////////////////////////////////////////////
 /// Event structure in the context of a state machine
 ////////////////////////////////////////////////////////////////////////////////////////////////
 struct EventId
 {
-    int id;
-    std::string name;
+    NameString name;
 
-    bool_t operator==(EventId const& event)
+    bool operator==(EventId const& other) const
     {
-        return ( this->id == event.id ) && ( this->name == event.name ) ;
+        return (name == other.name);
     }
 
-    bool_t operator!=(EventId const& event)
+    bool operator!=(EventId const& other) const
     {
-        return not ( *this == event ) ;
+        return not (*this == other);
     }
 };
 
@@ -66,89 +66,58 @@ struct Transition
 {
     EventId eventId;
     std::shared_ptr<State_> stateTo;
-    std::function<bool_t()> guard;
+    std::function<bool()> guard;
     std::function<void()> action;
 };
 
 ////////////////////////////////////////////////////////////////////////////////////////////////
 /// Mother class of all states
 ////////////////////////////////////////////////////////////////////////////////////////////////
+
 class State_ : public std::enable_shared_from_this<State_>
 {
 public:
-    State_(std::string const& name) : name_(name) {};
+    State_(NameString const& name) : name_(name) {};
 
-    virtual ~State_() { transitionTable_.clear(); }
+    virtual ~State_();
 
     ////////////////////////////////////////////////////////////////////////////////////////////////
     /// \brief      Add a new transition in the vector
     ////////////////////////////////////////////////////////////////////////////////////////////////
-    void addTransition(Transition t)
-    {
-        transitionTable_.push_back(t);
-    }
+    void addTransition(Transition t);
+
     ////////////////////////////////////////////////////////////////////////////////////////////////
     /// \brief      Set the run method which can be called anywhere else
     ///             by the owner of the state machine (e.g in a tick)
     ////////////////////////////////////////////////////////////////////////////////////////////////
-    void setRun(std::function<void()> f)
-    {
-        run_ = f;
-    }
+    void setRun(std::function<void()> f);
 
     ////////////////////////////////////////////////////////////////////////////////////////////////
     /// \brief      Set the On Entry method which is called when entering the state
     ////////////////////////////////////////////////////////////////////////////////////////////////
-    void setOnEntry(std::function<void()> f)
-    {
-        onEntry_ = f;
-    }
+    void setOnEntry(std::function<void()> f);
 
     ////////////////////////////////////////////////////////////////////////////////////////////////
     /// \brief      Set the On Exit method which is called when exiting the state
     ////////////////////////////////////////////////////////////////////////////////////////////////
-    void setOnExit(std::function<void()> f)
-    {
-        onExit_ = f;
-    }
+    void setOnExit(std::function<void()> f);
 
     ////////////////////////////////////////////////////////////////////////////////////////////////
     /// \brief      Checks if a possible transition exists and if so returns the State To
     ////////////////////////////////////////////////////////////////////////////////////////////////
-    virtual std::shared_ptr<State_> handleEvent(EventId const& e)
-    {
-        for (auto transition : transitionTable_)
-        {
-            if ( transition.eventId.id == e.id and transition.guard() )
-            {
-                transition.action();
-                return transition.stateTo;
-            }
-        }
-        return nullptr;
-    }
+    virtual std::shared_ptr<State_> handleEvent(EventId const& e);
 
-    virtual std::string const& getName() { return name_; };
+    /// \brief      Getters
+    virtual NameString const& name();
+    virtual std::shared_ptr<State_> getState();
 
-    virtual std::shared_ptr<State_> getState()
-    {
-        return shared_from_this();
-    }
+    /// \brief      Executors
+    virtual void run();
+    virtual void onEntry();
+    virtual void onExit();
 
-    virtual void run()
-    {
-        run_();
-    }
-
-    virtual void onEntry()
-    {
-        onEntry_();
-    }
-
-    virtual void onExit()
-    {
-        onExit_();
-    }
+    virtual bool isStateManager();
+    virtual std::shared_ptr<State_> getInitState();
 
     std::function<void()> run_     = NoAction;
     std::function<void()> onEntry_ = NoAction;
@@ -156,7 +125,7 @@ public:
 
 private:
     std::vector<Transition> transitionTable_ {};
-    std::string name_;
+    NameString name_;
 };
 
 ////////////////////////////////////////////////////////////////////////////////////////////////
@@ -164,11 +133,25 @@ private:
 ////////////////////////////////////////////////////////////////////////////////////////////////
 using State = std::shared_ptr<State_>;
 
-void displayTransition(std::string const& managerName, std::string const& eventName, std::string const& currentStateName, std::string const& newStateName)
+// State which indicates that a transition has already occurred (one transition max by event)
+extern State const StateTransitionAlreadyComplete;
+
+// State which indicates that a state machine is complete and can return if possible
+extern State const Exit;
+
+
+char_t constexpr FSM_DATA_ACCESSOR[] = "StateMachine";
+
+// Access to FSM state value by channel of choice.
+// For now in SHM
+class AbstractExposedStateStrategy
 {
-    //core::Logger::info("[FSM][%s] %s : %s --> %s", managerName().c_str(), eventName.name.c_str(), currentStateName.c_str(), newStateName.c_str());
-    std::cout <<"[FSM][" <<managerName.c_str() <<"] " <<eventName.c_str() <<" : " <<currentStateName.c_str() <<" --> " <<newStateName.c_str() <<std::endl;
-}
+public:
+    AbstractExposedStateStrategy() = default;
+    virtual ~AbstractExposedStateStrategy() = default;
+
+    virtual void update(NameString const& state) = 0;
+};
 
 ////////////////////////////////////////////////////////////////////////////////////////////////
 /// Mother class of all state manager handling transitions and which is a State_ as well
@@ -176,88 +159,52 @@ void displayTransition(std::string const& managerName, std::string const& eventN
 class StateManagerClass_ : public State_
 {
 public:
-    StateManagerClass_(std::string name) : State_(name) {};
+    StateManagerClass_(NameString const& name, bool isVerbose = true)
+        : State_(name)
+        , isVerbose_(isVerbose)
+        {};
 
-    virtual ~StateManagerClass_() {}
+    virtual ~StateManagerClass_() = default;
+
+    void start();
+
+    void run() override;
 
     ////////////////////////////////////////////////////////////////////////////////////////////////
     /// \brief      Checks if in the current state a possible transition exists
     ///             and if so changes the current state
     ////////////////////////////////////////////////////////////////////////////////////////////////
-    virtual std::shared_ptr<State_> handleEvent(EventId const& e) override
-    {
-        EventId currentEvent = e;
-        State newState(currentState_->handleEvent(currentEvent));
+    virtual std::shared_ptr<State_> handleEvent(EventId const& e);
 
-        if (newState != nullptr)
-        {
-            displayTransition(getName(), currentEvent.name, currentState_->getName(), newState->getName());
-            currentState_->onExit();
-            newState->onEntry();
-            currentState_ = newState;
-        }
-        else
-        {
-            newState = State_::handleEvent(currentEvent);
-            return newState;
-        }
-        return nullptr;
-    }
+    /// \brief      Executors
+    virtual void onEntry();
+    virtual void onExit();
+    virtual void reset();
 
-    void start()
-    {
-        reset();
-        currentState_->onEntry_();
-    };
+    /// \brief      Set entry state of this state manager
+    virtual void setInitState(State state);
 
-    void run() override
-    {
-        currentState_->run();
-    }
+    /// \brief      Utilities
+    bool isState(NameString const& str);
+    bool isState(char_t const* str);
+    NameString const& name() override;
+    State getState() override;
+    State getInitState() override;
+    bool isStateManager() override;
 
-    void onEntry() override
-    {
-        onEntry_();
-        currentState_->onEntry();
-    }
+    void addExposedStrategy(std::shared_ptr<AbstractExposedStateStrategy> strategy);
+    std::vector<std::shared_ptr<AbstractExposedStateStrategy>> const& exposedStrategies() const { return exposedStrategies_; }
+    void updateState();
 
-    void onExit() override
-    {
-        currentState_->onExit();
-        onExit_();
-    }
-
-    void reset()
-    {
-        currentState_ = initState_ ;
-    }
-
-    void setInitState(State state)
-    {
-        initState_ = state;
-        reset();
-    }
-
-    bool isState(std::string const& str)
-    {
-        return str == currentState_->getName();
-    }
-
-    std::string const& getName() override
-    {
-        return currentState_->getName();
-    }
-
-    State getState() override
-    {
-        return currentState_->getState();
-    }
-
-private:
+protected:
     State initState_ {nullptr};
     State currentState_ {nullptr};
+    std::vector<std::shared_ptr<AbstractExposedStateStrategy>> exposedStrategies_{};
 
+private:
+    bool isVerbose_;
 };
+
 
 ////////////////////////////////////////////////////////////////////////////////////////////////
 // Public accessor of StateManagerClass_ shared pointer
