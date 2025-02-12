@@ -18,6 +18,8 @@ set(CMAKE_C_COMPILER "gcc" )
 set(CMAKE_CXX_FLAGS "-isystem -mconsole -std=c++20 -fpermissive -pthread")
 #set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
+include(CTest)
+
 add_subdirectory (TinyFSM)
 add_subdirectory (BoostSML)
 #add_subdirectory (BoostMSM)
