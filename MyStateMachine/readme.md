@@ -1,24 +1,13 @@
-# Build & Run StateMachine unit tests
+# Build & Run unit tests
 
-Prerequisite, you'll need to have gtest built somewhere on yor system. In the CMakeFile.txt file you'll need to point to your gtest path :
-
-```
-set(GTEST_PATH "path/to/your/gtest")
-```
-
-Ensure that you have a gtest libs built and available. CMake is looking at them here FYI:
-
-```
-target_link_libraries(fsm_test ${GTEST_PATH}/build/libgtest_main.a ${GTEST_PATH}/build/libgtest.a)
-```
-Then, run the following commands:
+Ensure you have gcc or any c++ compiler added into your system path. Then, run the following commands:
 
 ```
 mkdir build
 cd build
 cmake .. -G "MinGW Makefiles"
 make -j8
-./fsm_test.exe
+ctest
 ```
 
 # State Machine Design
