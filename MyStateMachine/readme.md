@@ -5,9 +5,10 @@ Ensure you have gcc or any c++ compiler added into your system path. Then, run t
 ```
 mkdir build
 cd build
-cmake .. -G "MinGW Makefiles"
-make -j8
+cmake .. -G "MinGW Makefiles" -DENABLE_COVERAGE=ON
+make -j8 && make test
 ctest
+gcovr -r ../ . --exclude ".*test/.*" --html --html-details -o cov.html
 ```
 
 # State Machine Design

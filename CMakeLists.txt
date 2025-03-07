@@ -16,6 +16,21 @@ set(CMAKE_C_COMPILER "gcc" )
 set(CMAKE_CXX_FLAGS "-isystem -mconsole -std=c++20 -fpermissive -pthread")
 #set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
+
+
+option(ENABLE_COVERAGE "Enable coverage reporting" OFF)
+
+if(ENABLE_COVERAGE)
+    if(CMAKE_CXX_COMPILER_ID MATCHES "GNU")
+        message(STATUS "Coverage enabled with MinGW/GCC")
+        add_compile_options(--coverage -O0 -g)
+        add_link_options(--coverage)
+    else()
+        message(WARNING "Coverage only supported with MinGW/GCC on Windows")
+    endif()
+endif()
+
+
 include(CTest)
 
 add_subdirectory (TinyFSM)
